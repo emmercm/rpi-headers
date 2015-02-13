@@ -1,19 +1,19 @@
 #!/bin/bash
 
-LIN_HEADERS=linux-headers-$(uname -r)
+HEAD_PACKAGE=linux-headers-$(uname -r)
 
 
 # Try APT (likely to fail)
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
-	echo "Checking apt-cache for $LIN_HEADERS ..."
+	echo "Checking apt-cache for $HEAD_PACKAGE ..."
 	
 	echo "   Running apt-get update ..."
 	sudo apt-get update > /dev/null
 	
-	APT_CACHE=$(apt-cache search "$LIN_HEADERS")
+	APT_CACHE=$(apt-cache search "$HEAD_PACKAGE")
 	if [ "$APT_CACHE" != "" ]; then
 		echo "   Found package, installing ..."
-		sudo apt-get -y install "$LIN_HEADERS" > /dev/null
+		sudo apt-get -y install "$HEAD_PACKAGE" > /dev/null
 	else
 		echo "   Did not find package"
 	fi
@@ -23,9 +23,9 @@ fi
 
 # Try niksula.hut.fi/~mhiienka
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
-	echo "Checking http://niksula.hut.fi/~mhiienka for $LIN_HEADERS ..."
+	echo "Checking http://niksula.hut.fi/~mhiienka for $HEAD_PACKAGE ..."
 	
-	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | grep \.deb | sed 's/%2b/+/g' | sed 's/"/\n/g' | grep deb$ | grep $LIN_HEADERS)
+	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | grep \.deb | sed 's/%2b/+/g' | sed 's/"/\n/g' | grep deb$ | grep $HEAD_PACKAGE)
 	if [ "$WGET_PACKAGE" != "" ]; then
 		echo "   Found, downloading ..."
 		
@@ -37,13 +37,13 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/$WGET_PACKAGE" > /dev/null
 		if [ -e "$WGET_PACKAGE" ]; then
 			echo "      Installing package ..."
-			if [ "$(dpkg -l \"$LIN_HEADERS\" 2>&1 | grep 'no package')" != "" ]; then
+			if [ "$(dpkg -l \"$HEAD_PACKAGE\" 2>&1 | grep 'no package')" != "" ]; then
 				echo "         Uninstalling old package ..."
-				sudo dpkg --remove --force-remove-reinstreq "$LIN_HEADERS" &> /dev/null
+				sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
 			fi
-			if [ -e "$LIN_HEADERS" ]; then
-				echo "         Deleting $(pwd)/$LIN_HEADERS/ ..."
-				sudo rm -rf "$LIN_HEADERS" > /dev/null
+			if [ -e "$HEAD_PACKAGE" ]; then
+				echo "         Deleting $(pwd)/$HEAD_PACKAGE/ ..."
+				sudo rm -rf "$HEAD_PACKAGE" > /dev/null
 			fi
 			sudo dpkg --install "$WGET_PACKAGE" > /dev/null
 			sudo rm -f "$WGET_PACKAGE" > /dev/null
@@ -62,7 +62,7 @@ fi
 
 # Build from source (takes up a lot of space on disk)
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
-	echo "Building $LIN_HEADERS from http://github.com/raspberrypi/linux ..."
+	echo "Building $HEAD_PACKAGE from http://github.com/raspberrypi/linux ..."
 	
 	cd /usr/src
 	GIT_BRANCH=rpi-$(uname -r | sed -n "s/\([0-9]\+\.[0-9]\+\).*/\1/p").y

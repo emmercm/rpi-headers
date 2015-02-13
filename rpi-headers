@@ -1,0 +1,112 @@
+#!/bin/bash
+
+LIN_HEADERS=linux-headers-$(uname -r)
+
+
+# Try APT (likely to fail)
+if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
+	echo "Checking apt-cache for $LIN_HEADERS ..."
+	
+	echo "   Running apt-get update ..."
+	sudo apt-get update > /dev/null
+	
+	APT_CACHE=`apt-cache search $LIN_HEADERS`
+	if [ "$APT_CACHE" != "" ]; then
+		echo "   Found package, installing ..."
+		sudo apt-get -y install $LIN_HEADERS > /dev/null
+	else
+		echo "   Did not find package"
+	fi
+	echo ""
+fi
+
+
+# Try niksula.hut.fi/~mhiienka
+if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
+	echo "Checking http://niksula.hut.fi/~mhiienka for $LIN_HEADERS ..."
+	
+	WGET_PACKAGE=`wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | grep \.deb | sed 's/%2b/+/g' | sed 's/"/\n/g' | grep deb$ | grep $LIN_HEADERS`
+	if [ "$WGET_PACKAGE" != "" ]; then
+		echo "   Found, downloading ..."
+		
+		cd /usr/src
+		if [ -e "$WGET_PACKAGE" ]; then
+			echo "      Deleting $(pwd)/$WGET_PACKAGE ,,,"
+			sudo rm -f $WGET_PACKAGE > /dev/null
+		fi
+		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/$WGET_PACKAGE" > /dev/null
+		if [ -e "$WGET_PACKAGE" ]; then
+			echo "      Installing package ..."
+			if [ "`dpkg -l $LIN_HEADERS 2>&1 | grep 'no package'`" != "" ]; then
+				echo "         Uninstalling old package ..."
+				sudo dpkg --remove --force-remove-reinstreq "$LIN_HEADERS" &> /dev/null
+			fi
+			if [ -e "$LIN_HEADERS" ]; then
+				echo "         Deleting $(pwd)/$LIN_HEADERS/ ..."
+				sudo rm -rf $LIN_HEADERS > /dev/null
+			fi
+			sudo dpkg --install $WGET_PACKAGE > /dev/null
+			sudo rm -f $WGET_PACKAGE > /dev/null
+			
+			echo "      Installing apt-get missing dependencies ..."
+			sudo apt-get -y check > /dev/null
+			sudo apt-get -fy install > /dev/null
+		else
+			echo "      Download failed"
+		fi
+	else
+		echo "   Did not find package"
+	fi
+	echo ""
+fi
+
+# Build from source (takes up a lot of space on disk)
+if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
+	echo "Building $LIN_HEADERS from http://github.com/raspberrypi/linux ..."
+	
+	cd /usr/src
+	GIT_BRANCH=rpi-`uname -r | sed -n "s/\([0-9]\+\.[0-9]\+\).*/\1/p"`.y
+	if [ -e "$GIT_BRANCH" ]; then
+		echo "   Deleting $(pwd)/$GIT_BRANCH/ ..."
+		sudo rm -rf $GIT_BRANCH > /dev/null
+	fi
+	sudo mkdir $GIT_BRANCH > /dev/null
+	cd $GIT_BRANCH
+	echo "   Cloning branch $GIT_BRANCH (very large) ..."
+	sudo git clone --depth 1 git://github.com/raspberrypi/linux.git -b $GIT_BRANCH &> /dev/null
+	if [ -e "linux/Makefile" ]; then
+		cd linux
+		
+		echo "   Running make mrproper/oldconfig/kernelrelease (prep) ..."
+		sudo make mrproper > /dev/null
+		sudo sh -c 'zcat /proc/config.gz > .config'
+		sudo make oldconfig > /dev/null
+		sudo make kernelrelease > /dev/null
+		KERN_VER=`make kernelrelease`
+		if [ "$KERN_VER" == "$(uname -r)" ]; then
+			echo "   Running make modules_prepare (build) ..."
+			sudo make modules_prepare > /dev/null
+			BUILD_RES=$?
+			if [ $BUILD_RES -eq 0 ]; then
+				echo "      Moving to /lib/modules/$(uname -r)/build ..."
+				cd ..
+				sudo mkdir -p "/lib/modules/$(uname -r)" > /dev/null
+				sudo mv linux "/lib/modules/$(uname -r)/build" > /dev/null
+			else
+				echo "      Build failed"
+				cd ..
+			fi
+		else
+			echo "      Git branch is $KERN_VER, expected $(uname -r)"
+			echo "      Try running Hexxeh's rpi-update, reboot, then try again"
+			cd ..
+		fi
+	else
+		echo "      Git clone failed"
+	fi
+	
+	cd ..
+	# sudo rm -rf $GIT_BRANCH > /dev/null
+	
+	echo ""
+fi

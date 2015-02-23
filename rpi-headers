@@ -10,6 +10,13 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "   Running apt-get update ..."
 	sudo apt-get update > /dev/null
 	
+	# niksula.hut.fi package shows up in "apt-cache search"
+	DPKG_LIST=$(dpkg -l \"$HEAD_PACKAGE\" 2>&1 | grep 'no package')
+	if [ "$DPKG_LIST" != "" ]; then
+		echo "   Uninstalling old package ..."
+		sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
+	fi
+	
 	APT_CACHE=$(apt-cache search "$HEAD_PACKAGE")
 	if [ "$APT_CACHE" != "" ]; then
 		echo "   Found package, installing ..."
@@ -36,19 +43,20 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 		fi
 		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/$WGET_PACKAGE" > /dev/null
 		if [ -e "$WGET_PACKAGE" ]; then
-			echo "      Installing package ..."
-			if [ "$(dpkg -l \"$HEAD_PACKAGE\" 2>&1 | grep 'no package')" != "" ]; then
-				echo "         Uninstalling old package ..."
+			DPKG_LIST=$(dpkg -l \"$HEAD_PACKAGE\" 2>&1 | grep 'no package')
+			if [ "$DPKG_LIST" != "" ]; then
+				echo "   Uninstalling old package ..."
 				sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
 			fi
 			if [ -e "$HEAD_PACKAGE" ]; then
-				echo "         Deleting $(pwd)/$HEAD_PACKAGE/ ..."
+				echo "   Deleting $(pwd)/$HEAD_PACKAGE/ ..."
 				sudo rm -rf "$HEAD_PACKAGE" > /dev/null
 			fi
+			echo "   Installing package ..."
 			sudo dpkg --install "$WGET_PACKAGE" > /dev/null
 			sudo rm -f "$WGET_PACKAGE" > /dev/null
 			
-			echo "      Installing apt-get missing dependencies ..."
+			echo "   Installing apt-get missing dependencies ..."
 			sudo apt-get -y check > /dev/null
 			sudo apt-get -fy install > /dev/null
 		else

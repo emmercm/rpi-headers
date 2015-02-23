@@ -10,15 +10,15 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "   Running apt-get update ..."
 	sudo apt-get update > /dev/null
 	
-	# niksula.hut.fi package shows up in "apt-cache search"
-	DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep 'no package')
-	if [ "$DPKG_LIST" == "" ]; then
-		echo "   Uninstalling old package ..."
-		sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
-	fi
-	
 	APT_CACHE=$(apt-cache search "$HEAD_PACKAGE")
 	if [ "$APT_CACHE" != "" ]; then
+		# niksula.hut.fi package shows up in "apt-cache search"
+		DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep "no package")
+		if [ "$DPKG_LIST" == "" ]; then
+			echo "   Uninstalling old package ..."
+			sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
+		fi
+		
 		echo "   Found package, installing ..."
 		sudo apt-get -y install "$HEAD_PACKAGE" > /dev/null
 	else
@@ -43,7 +43,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 		fi
 		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/$WGET_PACKAGE" > /dev/null
 		if [ -e "$WGET_PACKAGE" ]; then
-			DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep 'no package')
+			DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep "no package")
 			if [ "$DPKG_LIST" != "" ]; then
 				echo "   Uninstalling old package ..."
 				sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null

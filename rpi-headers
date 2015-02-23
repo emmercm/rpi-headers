@@ -11,7 +11,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	sudo apt-get update > /dev/null
 	
 	# niksula.hut.fi package shows up in "apt-cache search"
-	DPKG_LIST=$(dpkg -l \"$HEAD_PACKAGE\" 2>&1 | grep 'no package')
+	DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep 'no package')
 	if [ "$DPKG_LIST" != "" ]; then
 		echo "   Uninstalling old package ..."
 		sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
@@ -32,7 +32,7 @@ fi
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "Checking http://niksula.hut.fi/~mhiienka for $HEAD_PACKAGE ..."
 	
-	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | grep \.deb | sed 's/%2b/+/g' | sed 's/"/\n/g' | grep deb$ | grep $HEAD_PACKAGE)
+	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | grep \.deb | sed 's/%2b/+/g' | sed 's/"/\n/g' | grep deb$ | grep "$HEAD_PACKAGE")
 	if [ "$WGET_PACKAGE" != "" ]; then
 		echo "   Found, downloading ..."
 		
@@ -43,7 +43,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 		fi
 		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/$WGET_PACKAGE" > /dev/null
 		if [ -e "$WGET_PACKAGE" ]; then
-			DPKG_LIST=$(dpkg -l \"$HEAD_PACKAGE\" 2>&1 | grep 'no package')
+			DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep 'no package')
 			if [ "$DPKG_LIST" != "" ]; then
 				echo "   Uninstalling old package ..."
 				sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null

@@ -1,26 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -o nounset
+set -o errexit
 
 HEAD_PACKAGE=linux-headers-$(uname -r)
 
 
 # Try APT (likely to fail)
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
-	echo "Checking apt-cache for $HEAD_PACKAGE ..."
+	echo "Checking apt-cache for ${HEAD_PACKAGE} ..."
 	
 	echo "   Running apt-get update ..."
 	sudo apt-get update > /dev/null
 	
-	APT_CACHE=$(apt-cache search "$HEAD_PACKAGE")
-	if [ "$APT_CACHE" != "" ]; then
+	APT_CACHE=$(apt-cache search "${HEAD_PACKAGE}")
+	if [ "${APT_CACHE}" != "" ]; then
 		# niksula.hut.fi package shows up in "apt-cache search"
-		DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep "no package")
-		if [ "$DPKG_LIST" == "" ]; then
+		DPKG_LIST=$(dpkg -l "${HEAD_PACKAGE}" 2>&1 | grep "no package")
+		if [ "${DPKG_LIST}" == "" ]; then
 			echo "   Uninstalling old package ..."
-			sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
+			sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
 		fi
 		
 		echo "   Found package, installing ..."
-		sudo apt-get -y install "$HEAD_PACKAGE" > /dev/null
+		sudo apt-get -y install "${HEAD_PACKAGE}" > /dev/null
 	else
 		echo "   Did not find package"
 	fi
@@ -30,31 +33,31 @@ fi
 
 # Try niksula.hut.fi/~mhiienka
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
-	echo "Checking http://niksula.hut.fi/~mhiienka for $HEAD_PACKAGE ..."
+	echo "Checking http://niksula.hut.fi/~mhiienka for ${HEAD_PACKAGE} ..."
 	
-	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | grep \.deb | sed 's/%2b/+/g' | sed 's/"/\n/g' | grep deb$ | grep "$HEAD_PACKAGE")
-	if [ "$WGET_PACKAGE" == "" ]; then
+	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | grep \.deb | sed 's/%2b/+/g' | sed 's/"/\n/g' | grep deb$ | grep "${HEAD_PACKAGE}")
+	if [ "${WGET_PACKAGE}" == "" ]; then
 		echo "   Found, downloading ..."
 		
 		cd /usr/src
-		if [ -e "$WGET_PACKAGE" ]; then
-			echo "      Deleting $(pwd)/$WGET_PACKAGE ,,,"
-			sudo rm -f "$WGET_PACKAGE" > /dev/null
+		if [ -e "${WGET_PACKAGE}" ]; then
+			echo "      Deleting $(pwd)/${WGET_PACKAGE} ..."
+			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 		fi
-		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/$WGET_PACKAGE" > /dev/null
-		if [ -e "$WGET_PACKAGE" ]; then
-			DPKG_LIST=$(dpkg -l "$HEAD_PACKAGE" 2>&1 | grep "no package")
+		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
+		if [ -e "${WGET_PACKAGE}" ]; then
+			DPKG_LIST=$(dpkg -l "${HEAD_PACKAGE}" 2>&1 | grep "no package")
 			if [ "$DPKG_LIST" != "" ]; then
 				echo "   Uninstalling old package ..."
-				sudo dpkg --remove --force-remove-reinstreq "$HEAD_PACKAGE" &> /dev/null
+				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
 			fi
-			if [ -e "$HEAD_PACKAGE" ]; then
-				echo "   Deleting $(pwd)/$HEAD_PACKAGE/ ..."
-				sudo rm -rf "$HEAD_PACKAGE" > /dev/null
+			if [ -e "${HEAD_PACKAGE}" ]; then
+				echo "   Deleting $(pwd)/${HEAD_PACKAGE}/ ..."
+				sudo rm -rf "${HEAD_PACKAGE}" > /dev/null
 			fi
 			echo "   Installing package ..."
-			sudo dpkg --install "$WGET_PACKAGE" > /dev/null
-			sudo rm -f "$WGET_PACKAGE" > /dev/null
+			sudo dpkg --install "${WGET_PACKAGE}" > /dev/null
+			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 			
 			echo "   Installing apt-get missing dependencies ..."
 			sudo apt-get -y check > /dev/null
@@ -70,18 +73,18 @@ fi
 
 # Build from source (takes up a lot of space on disk)
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
-	echo "Building $HEAD_PACKAGE from http://github.com/raspberrypi/linux ..."
+	echo "Building ${HEAD_PACKAGE} from http://github.com/raspberrypi/linux ..."
 	
 	cd /usr/src
 	GIT_BRANCH=rpi-$(uname -r | sed -n "s/\([0-9]\+\.[0-9]\+\).*/\1/p").y
-	if [ -e "$GIT_BRANCH" ]; then
-		echo "   Deleting $(pwd)/$GIT_BRANCH/ ..."
-		sudo rm -rf "$GIT_BRANCH" > /dev/null
+	if [ -e "${GIT_BRANCH}" ]; then
+		echo "   Deleting $(pwd)/${GIT_BRANCH}/ ..."
+		sudo rm -rf "${GIT_BRANCH}" > /dev/null
 	fi
-	sudo mkdir "$GIT_BRANCH" > /dev/null
-	cd "$GIT_BRANCH"
-	echo "   Cloning git branch $GIT_BRANCH (very large) ..."
-	sudo git clone --depth 1 git://github.com/raspberrypi/linux.git -b "$GIT_BRANCH" &> /dev/null
+	sudo mkdir "${GIT_BRANCH}" > /dev/null
+	cd "${GIT_BRANCH}"
+	echo "   Cloning git branch ${GIT_BRANCH} (very large) ..."
+	sudo git clone --depth 1 git://github.com/raspberrypi/linux.git -b "${GIT_BRANCH}" &> /dev/null
 	if [ -e "linux/Makefile" ]; then
 		cd linux
 		
@@ -91,11 +94,11 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 		sudo make oldconfig > /dev/null
 		sudo make kernelrelease > /dev/null
 		KERN_VER=$(make kernelrelease)
-		if [ "$KERN_VER" == "$(uname -r)" ]; then
+		if [ "${KERN_VER}" == "$(uname -r)" ]; then
 			echo "   Running make modules_prepare (build) ..."
 			sudo make modules_prepare > /dev/null
 			BUILD_RES=$?
-			if [ $BUILD_RES -eq 0 ]; then
+			if [ ${BUILD_RES} -eq 0 ]; then
 				echo "      Moving to /lib/modules/$(uname -r)/build ..."
 				cd ..
 				sudo mkdir -p "/lib/modules/$(uname -r)" > /dev/null
@@ -104,7 +107,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 				echo "      Build failed"
 			fi
 		else
-			echo "      Git branch is $KERN_VER, expected $(uname -r)"
+			echo "      Git branch is ${KERN_VER}, expected $(uname -r)"
 			echo "      Try running Hexxeh's rpi-update, reboot, then try again"
 		fi
 	else
@@ -112,7 +115,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	fi
 	
 	cd /usr/src
-	sudo rm -rf "$GIT_BRANCH" > /dev/null
+	sudo rm -rf "${GIT_BRANCH}" > /dev/null
 	
 	echo ""
 fi

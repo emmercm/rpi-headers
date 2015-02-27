@@ -11,7 +11,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "Checking apt-cache for ${HEAD_PACKAGE} ..."
 	
 	echo "   Running apt-get update ..."
-	sudo apt-get update > /dev/null
+	sudo apt-get update > /dev/null || true
 	
 	APT_CACHE=$(apt-cache search "${HEAD_PACKAGE}")
 	if [ "${APT_CACHE}" != "" ]; then
@@ -19,7 +19,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 		DPKG_LIST=$(dpkg -l "${HEAD_PACKAGE}" 2>&1 | grep "no package")
 		if [ "${DPKG_LIST}" == "" ]; then
 			echo "   Uninstalling old package ..."
-			sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
+			sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" > /dev/null
 		fi
 		
 		echo "   Found package, installing ..."
@@ -49,7 +49,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 			DPKG_LIST=$(dpkg -l "${HEAD_PACKAGE}" 2>&1 | grep "no package")
 			if [ "$DPKG_LIST" != "" ]; then
 				echo "   Uninstalling old package ..."
-				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
+				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" > /dev/null
 			fi
 			if [ -e "${HEAD_PACKAGE}" ]; then
 				echo "   Deleting $(pwd)/${HEAD_PACKAGE}/ ..."
@@ -71,6 +71,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo ""
 fi
 
+
 # Build from source (takes up a lot of space on disk)
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "Building ${HEAD_PACKAGE} from http://github.com/raspberrypi/linux ..."
@@ -84,7 +85,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	sudo mkdir "${GIT_BRANCH}" > /dev/null
 	cd "${GIT_BRANCH}"
 	echo "   Cloning git branch ${GIT_BRANCH} (very large) ..."
-	sudo git clone --depth 1 git://github.com/raspberrypi/linux.git -b "${GIT_BRANCH}" &> /dev/null
+	sudo git clone --quiet --depth 1 git://github.com/raspberrypi/linux.git -b "${GIT_BRANCH}" > /dev/null
 	if [ -e "linux/Makefile" ]; then
 		cd linux
 		
@@ -119,3 +120,6 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	
 	echo ""
 fi
+
+
+if [ ! -e "/lib/modules/$(uname -r)/build" ]; then exit 1; fi

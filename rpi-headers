@@ -16,10 +16,10 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	APT_CACHE=$(apt-cache search "${HEAD_PACKAGE}")
 	if [ "${APT_CACHE}" != "" ]; then
 		# niksula.hut.fi package shows up in "apt-cache search"
-		DPKG_LIST=$(dpkg -l "${HEAD_PACKAGE}" 2>&1 | grep "no package")
+		DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package")
 		if [ "${DPKG_LIST}" == "" ]; then
 			echo "   Uninstalling old package ..."
-			sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" > /dev/null
+			sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
 		fi
 		
 		echo "   Found package, installing ..."
@@ -46,10 +46,10 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 		fi
 		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
 		if [ -e "${WGET_PACKAGE}" ]; then
-			DPKG_LIST=$(dpkg -l "${HEAD_PACKAGE}" 2>&1 | grep "no package")
-			if [ "$DPKG_LIST" != "" ]; then
+			DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package")
+			if [ "$DPKG_LIST" == "" ]; then
 				echo "   Uninstalling old package ..."
-				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" > /dev/null
+				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
 			fi
 			if [ -e "${HEAD_PACKAGE}" ]; then
 				echo "   Deleting $(pwd)/${HEAD_PACKAGE}/ ..."
@@ -85,7 +85,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	sudo mkdir "${GIT_BRANCH}" > /dev/null
 	cd "${GIT_BRANCH}"
 	echo "   Cloning git branch ${GIT_BRANCH} (very large) ..."
-	sudo git clone --quiet --depth 1 git://github.com/raspberrypi/linux.git -b "${GIT_BRANCH}" > /dev/null
+	sudo git clone --quiet --depth 1 git://github.com/raspberrypi/linux.git --branch "${GIT_BRANCH}" > /dev/null
 	if [ -e "linux/Makefile" ]; then
 		cd linux
 		

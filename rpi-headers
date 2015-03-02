@@ -13,15 +13,15 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "   Running apt-get update ..."
 	sudo apt-get update > /dev/null || true
 	
+	# niksula.hut.fi package shows up in "apt-cache search"
+	DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package" || true)
+	if [ "${DPKG_LIST}" == "" ]; then
+		echo "   Uninstalling old package ..."
+		sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
+	fi
+	
 	APT_CACHE=$(apt-cache search "${HEAD_PACKAGE}")
 	if [ "${APT_CACHE}" != "" ]; then
-		# niksula.hut.fi package shows up in "apt-cache search"
-		DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package")
-		if [ "${DPKG_LIST}" == "" ]; then
-			echo "   Uninstalling old package ..."
-			sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
-		fi
-		
 		echo "   Found package, installing ..."
 		sudo apt-get -y install "${HEAD_PACKAGE}" > /dev/null
 	else
@@ -35,18 +35,17 @@ fi
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "Checking http://niksula.hut.fi/~mhiienka for ${HEAD_PACKAGE} ..."
 	
-	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2b/+/g' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
+	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq --tries 3 -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2b/+/g' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
 	if [ "${WGET_PACKAGE}" != "" ]; then
-		echo "   Found, downloading ..."
-		
 		cd /usr/src
 		if [ -e "${WGET_PACKAGE}" ]; then
-			echo "      Deleting $(pwd)/${WGET_PACKAGE} ..."
+			echo "   Deleting ${WGET_PACKAGE} ..."
 			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 		fi
-		sudo wget -q "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
+		echo "   Downloading ${WGET_PACKAGE} ..."
+		sudo wget -q --tries 3 "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
 		if [ -e "${WGET_PACKAGE}" ]; then
-			DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package")
+			DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package" || true)
 			if [ "$DPKG_LIST" == "" ]; then
 				echo "   Uninstalling old package ..."
 				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null

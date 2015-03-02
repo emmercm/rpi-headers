@@ -6,6 +6,14 @@ set -o errexit
 HEAD_PACKAGE=linux-headers-$(uname -r)
 
 
+# Check if already installed
+if [ -e "/lib/modules/$(uname -r)/build" ]; then
+	echo "${HEAD_PACKAGE} already installed"
+	echo ""
+	exit 0
+fi
+
+
 # Try APT (likely to fail)
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "Checking apt-cache for ${HEAD_PACKAGE} ..."

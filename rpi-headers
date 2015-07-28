@@ -43,7 +43,7 @@ fi
 if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 	echo "Checking http://niksula.hut.fi/~mhiienka for ${HEAD_PACKAGE} ..."
 	
-	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq --tries 3 -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2b/+/g' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
+	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq --tries 3 -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2B/+/ig' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
 	if [ "${WGET_PACKAGE}" != "" ]; then
 		cd /usr/src
 		if [ -e "${WGET_PACKAGE}" ]; then

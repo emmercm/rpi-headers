@@ -63,12 +63,18 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 				sudo rm -rf "${HEAD_PACKAGE}" > /dev/null
 			fi
 			echo "   Installing package ..."
-			sudo dpkg --install "${WGET_PACKAGE}" > /dev/null
+			sudo dpkg --install "${WGET_PACKAGE}" > /dev/null || true
 			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 			
-			echo "   Installing apt-get missing dependencies ..."
-			sudo apt-get -y check > /dev/null
-			sudo apt-get -fy install > /dev/null
+			if [ -e "/lib/modules/$(uname -r)/modules.order" ]; then
+				echo "   Installing apt-get missing dependencies ..."
+				sudo apt-get -y check > /dev/null
+				sudo apt-get -fy install > /dev/null
+			else
+				echo "      Install failed, removing ..."
+				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
+				sudo rm -rf "/lib/modules/$(uname -r)"
+			fi
 		else
 			echo "      Download failed"
 		fi

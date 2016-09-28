@@ -7,7 +7,7 @@ HEAD_PACKAGE=linux-headers-$(uname -r)
 
 
 # Check if already installed
-if [ -e "/lib/modules/$(uname -r)/build" ]; then
+if [ -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 	echo "${HEAD_PACKAGE} already installed"
 	echo ""
 	exit 0
@@ -15,7 +15,7 @@ fi
 
 
 # Try APT (likely to fail)
-if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
+if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 	echo "Checking apt-cache for ${HEAD_PACKAGE} ..."
 	
 	echo "   Running apt-get update ..."
@@ -40,7 +40,7 @@ fi
 
 
 # Try niksula.hut.fi/~mhiienka
-if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
+if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 	echo "Checking http://niksula.hut.fi/~mhiienka for ${HEAD_PACKAGE} ..."
 	
 	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq --tries 3 -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2B/+/ig' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
@@ -51,7 +51,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 		fi
 		echo "   Downloading ${WGET_PACKAGE} ..."
-		sudo wget -q --tries 3 "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
+		sudo wget --quiet --tries 3 "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
 		if [ -e "${WGET_PACKAGE}" ]; then
 			DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package" || true)
 			if [ "$DPKG_LIST" == "" ]; then
@@ -66,7 +66,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 			sudo dpkg --install "${WGET_PACKAGE}" > /dev/null || true
 			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 			
-			if [ -e "/lib/modules/$(uname -r)/modules.order" ]; then
+			if [ -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 				echo "   Installing apt-get missing dependencies ..."
 				sudo apt-get -y check > /dev/null
 				sudo apt-get -fy install > /dev/null
@@ -86,7 +86,7 @@ fi
 
 
 # Build from source (takes up a lot of space on disk)
-if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
+if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 	echo "Building ${HEAD_PACKAGE} from http://github.com/raspberrypi/linux ..."
 	cd /usr/src
 	GIT_BRANCH=rpi-$(uname -r | sed -n "s/\([0-9]\+\.[0-9]\+\).*/\1/p").y
@@ -166,4 +166,4 @@ if [ ! -e "/lib/modules/$(uname -r)/build" ]; then
 fi
 
 
-if [ ! -e "/lib/modules/$(uname -r)/build" ]; then exit 1; fi
+if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then exit 1; fi

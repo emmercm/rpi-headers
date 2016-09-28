@@ -2,11 +2,11 @@
 A tool to build linux-headers on your Raspberry Pi.
 
 ## Reasoning
-The [raspberrypi.org](http://archive.raspberrypi.org/debian) and [raspbian.org](http://archive.raspberrypi.org/debian) APT repositories do not contain very many versions of linux-headers packages, especially newer ones that are necessary after using [Hexxeh's](https://github.com/Hexxeh) [rpi-update](https://github.com/Hexxeh/rpi-update) tool.
+The [raspberrypi.org](http://archive.raspberrypi.org/debian) and [raspbian.org](http://archive.raspberrypi.org/debian) APT repositories do not contain very many versions of linux-headers packages, especially newer ones that are necessary after using [Liam McLoughlin's](https://github.com/Hexxeh) [rpi-update](https://github.com/Hexxeh/rpi-update) tool.
 
 ## Dependencies
 ```
-$ apt-get install wget git make gcc bc dkms
+$ sudo apt-get install wget git make gcc-4.7 bc dkms
 ```
 
 ## Execution

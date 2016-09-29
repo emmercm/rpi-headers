@@ -7,15 +7,28 @@ HEAD_PACKAGE=linux-headers-$(uname -r)
 
 
 # Check if already installed
-if [ -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
+function check_headers() {
+	if [ -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
+		if [ ! -e "/lib/modules/$(uname -r)/build/kernel/time/timeconst.bc" ]; then
+			# https://github.com/raspberrypi/linux/issues/1441
+			# https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/linux-headers-4.4.11-v7+_4.4.11-v7+-2_armhf.deb
+			return 1
+		fi
+		return 0
+	fi
+	return 1
+}
+
+
+check_headers && (
 	echo "${HEAD_PACKAGE} already installed"
 	echo ""
 	exit 0
-fi
+)
 
 
 # Try APT (likely to fail)
-if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
+check_headers || (
 	echo "Checking apt-cache for ${HEAD_PACKAGE} ..."
 	
 	echo "   Running apt-get update ..."
@@ -36,14 +49,14 @@ if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 		echo "   Did not find package"
 	fi
 	echo ""
-fi
+)
 
 
 # Try niksula.hut.fi/~mhiienka
-if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
-	echo "Checking http://niksula.hut.fi/~mhiienka for ${HEAD_PACKAGE} ..."
+check_headers || (
+	echo "Checking https://www.niksula.hut.fi/~mhiienka for ${HEAD_PACKAGE} ..."
 	
-	WGET_PACKAGE=$(wget http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq --tries 3 -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2B/+/ig' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
+	WGET_PACKAGE=$(wget https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq --tries 3 -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2B/+/ig' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
 	if [ "${WGET_PACKAGE}" != "" ]; then
 		cd /usr/src
 		if [ -e "${WGET_PACKAGE}" ]; then
@@ -51,7 +64,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 		fi
 		echo "   Downloading ${WGET_PACKAGE} ..."
-		sudo wget --quiet --tries 3 "http://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
+		sudo wget --quiet --tries 3 "https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
 		if [ -e "${WGET_PACKAGE}" ]; then
 			DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package" || true)
 			if [ "$DPKG_LIST" == "" ]; then
@@ -66,15 +79,15 @@ if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 			sudo dpkg --install "${WGET_PACKAGE}" > /dev/null || true
 			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 			
-			if [ -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
+			check_headers && (
 				echo "   Installing apt-get missing dependencies ..."
 				sudo apt-get -y check > /dev/null
 				sudo apt-get -fy install > /dev/null
-			else
+			) || (
 				echo "      Install failed, removing ..."
 				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
 				sudo rm -rf "/lib/modules/$(uname -r)"
-			fi
+			)
 		else
 			echo "      Download failed"
 		fi
@@ -82,11 +95,11 @@ if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 		echo "   Did not find package"
 	fi
 	echo ""
-fi
+)
 
 
 # Build from source (takes up a lot of space on disk)
-if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
+check_headers || (
 	echo "Building ${HEAD_PACKAGE} from http://github.com/raspberrypi/linux ..."
 	cd /usr/src
 	GIT_BRANCH=rpi-$(uname -r | sed -n "s/\([0-9]\+\.[0-9]\+\).*/\1/p").y
@@ -163,7 +176,7 @@ if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
 	sudo rm -rf "${GIT_BRANCH}" > /dev/null
 	
 	echo ""
-fi
+)
 
 
-if [ ! -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then exit 1; fi
+check_headers || exit 1

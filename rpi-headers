@@ -98,83 +98,20 @@ check_headers || (
 )
 
 
-# Build from source (takes up a lot of space on disk)
 check_headers || (
-	echo "Building ${HEAD_PACKAGE} from http://github.com/raspberrypi/linux ..."
-	cd /usr/src
-	GIT_BRANCH=rpi-$(uname -r | sed -n "s/\([0-9]\+\.[0-9]\+\).*/\1/p").y
-	
-	# Generate /proc/config.gz if missing
-	if [ ! -e "/proc/config.gz" ]; then
-		echo "   Kernel config missing, running modprobe ..."
-		# Get depmod files from GitHub if missing
-		if [ ! -e "/lib/modules/$(uname -r)/modules.dep.bin" ]; then
-			echo "      depmod files missing, cloning firmware ..."
-			if [ -e "${GIT_BRANCH}-firmware" ]; then
-				echo "         Deleting $(pwd)/${GIT_BRANCH}-firmware/ ..."
-				sudo rm -rf "${GIT_BRANCH}-firmware" > /dev/null
-			fi
-			sudo git clone --quiet --depth 1 https://github.com/raspberrypi/firmware.git "${GIT_BRANCH}-firmware" > /dev/null
-			if [ -e "${GIT_BRANCH}-firmware/modules" ]; then
-				cd "${GIT_BRANCH}-firmware"
-				if [ -e "modules/$(uname -r)" ]; then
-					if [ -e "/lib/modules/$(uname -r)" ]; then
-						echo "         Deleting /lib/modules/$(uname -r)/ ..."
-						sudo rm -rf "/lib/modules/$(uname -r)" > /dev/null
-					fi
-					sudo mv "modules/$(uname -r)" "/lib/modules/$(uname -r)" > /dev/null
-				else
-					echo "         Did not find modules/$(uname -r)"
-				fi
-				cd ..
-				sudo rm -rf "${GIT_BRANCH}-firmware" > /dev/null
-			else
-				echo "         Git clone failed"
-			fi
-		fi
-		sudo modprobe configs > /dev/null
-	fi
-	
-	if [ -e "${GIT_BRANCH}" ]; then
-		echo "   Deleting $(pwd)/${GIT_BRANCH}/ ..."
-		sudo rm -rf "${GIT_BRANCH}" > /dev/null
-	fi
-	sudo mkdir "${GIT_BRANCH}" > /dev/null
-	cd "${GIT_BRANCH}"
-	echo "   Cloning git branch ${GIT_BRANCH} (very large) ..."
-	sudo git clone --quiet --depth 1 git://github.com/raspberrypi/linux.git --branch "${GIT_BRANCH}" > /dev/null
-	if [ -e "linux/Makefile" ]; then
-		cd linux
-		
-		echo "   Running make mrproper/oldconfig/kernelrelease (prep) ..."
-		sudo make mrproper > /dev/null
-		zcat /proc/config.gz | sudo tee --append .config > /dev/null
-		sudo make oldconfig > /dev/null
-		sudo make kernelrelease > /dev/null
-		KERN_VER=$(make kernelrelease)
-		if [ "${KERN_VER}" == "$(uname -r)" ]; then
-			echo "   Running make modules_prepare (build) ..."
-			sudo make modules_prepare > /dev/null
-			BUILD_RES=$?
-			if [ ${BUILD_RES} -eq 0 ]; then
-				echo "      Moving to /lib/modules/$(uname -r)/build ..."
-				cd ..
-				sudo mkdir -p "/lib/modules/$(uname -r)" > /dev/null
-				sudo mv linux "/lib/modules/$(uname -r)/build" > /dev/null
-			else
-				echo "      Build failed"
-			fi
-		else
-			echo "      Git branch is ${KERN_VER}, expected $(uname -r)"
-			echo "      Try running Hexxeh's rpi-update, reboot, then try again"
-		fi
+	echo "Attempting to build from source ..."
+	TEMP_DIR=$(mktemp -d) && cd ${TEMP_DIR}
+	KERNEL_BASE=$(echo $(uname -r) | sed -n "s/\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p")
+	echo "    Downloading https://github.com/emmercm/rpi-kernel ..."
+	wget --quiet --tries 3 --timestamping https://raw.githubusercontent.com/emmercm/rpi-kernel/master/rpi-kernel && chmod +x rpi-kernel > /dev/null
+	if [ -e "rpi-kernel" ]; then
+		echo ""
+		./rpi-kernel --version ${KERNEL_BASE} modules || (
+			echo "   Build failed, consider running rpi-kernel to build the entire kernel and headers together"
+		)
 	else
-		echo "      Git clone failed"
+		echo "      Download failed"
 	fi
-	
-	cd /usr/src
-	sudo rm -rf "${GIT_BRANCH}" > /dev/null
-	
 	echo ""
 )
 

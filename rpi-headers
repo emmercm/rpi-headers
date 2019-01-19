@@ -8,8 +8,8 @@ HEAD_PACKAGE=linux-headers-$(uname -r)
 
 # Check if already installed
 function check_headers() {
-	if [ -e "/lib/modules/$(uname -r)/build/arch/arm" ]; then
-		if [ ! -e "/lib/modules/$(uname -r)/build/kernel/time/timeconst.bc" ]; then
+	if [[ -e "/lib/modules/$(uname -r)/build/arch/arm" ]]; then
+		if [[ ! -e "/lib/modules/$(uname -r)/build/kernel/time/timeconst.bc" ]]; then
 			# https://github.com/raspberrypi/linux/issues/1441
 			# https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/linux-headers-4.4.11-v7+_4.4.11-v7+-2_armhf.deb
 			return 1
@@ -36,13 +36,13 @@ check_headers || (
 	
 	# niksula.hut.fi package shows up in "apt-cache search"
 	DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package" || true)
-	if [ "${DPKG_LIST}" == "" ]; then
+	if [[ "${DPKG_LIST}" == "" ]]; then
 		echo "   Uninstalling old package ..."
 		sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
 	fi
 	
 	APT_CACHE=$(apt-cache search "${HEAD_PACKAGE}")
-	if [ "${APT_CACHE}" != "" ]; then
+	if [[ "${APT_CACHE}" != "" ]]; then
 		echo "   Found package, installing ..."
 		sudo apt-get -y install "${HEAD_PACKAGE}" > /dev/null
 	else
@@ -57,21 +57,21 @@ check_headers || (
 	echo "Checking https://www.niksula.hut.fi/~mhiienka for ${HEAD_PACKAGE} ..."
 	
 	WGET_PACKAGE=$(wget https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/ -qq --tries 3 -O - | sed -n "s/.*href=\"\([^\"\/]\+\).*/\1/p" | sed 's/%2B/+/ig' | grep \.deb | grep "${HEAD_PACKAGE}" || true)
-	if [ "${WGET_PACKAGE}" != "" ]; then
+	if [[ "${WGET_PACKAGE}" != "" ]]; then
 		cd /usr/src
-		if [ -e "${WGET_PACKAGE}" ]; then
+		if [[ -e "${WGET_PACKAGE}" ]]; then
 			echo "   Deleting ${WGET_PACKAGE} ..."
 			sudo rm -f "${WGET_PACKAGE}" > /dev/null
 		fi
 		echo "   Downloading ${WGET_PACKAGE} ..."
 		sudo wget --quiet --tries 3 "https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi/${WGET_PACKAGE}" > /dev/null
-		if [ -e "${WGET_PACKAGE}" ]; then
+		if [[ -e "${WGET_PACKAGE}" ]]; then
 			DPKG_LIST=$(dpkg --list "${HEAD_PACKAGE}" 2>&1 | grep "no package" || true)
-			if [ "$DPKG_LIST" == "" ]; then
+			if [[ "$DPKG_LIST" == "" ]]; then
 				echo "   Uninstalling old package ..."
 				sudo dpkg --remove --force-remove-reinstreq "${HEAD_PACKAGE}" &> /dev/null
 			fi
-			if [ -e "${HEAD_PACKAGE}" ]; then
+			if [[ -e "${HEAD_PACKAGE}" ]]; then
 				echo "   Deleting $(pwd)/${HEAD_PACKAGE}/ ..."
 				sudo rm -rf "${HEAD_PACKAGE}" > /dev/null
 			fi
@@ -104,7 +104,7 @@ check_headers || (
 	KERNEL_BASE=$(echo $(uname -r) | sed -n "s/\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p")
 	echo "    Downloading https://github.com/emmercm/rpi-kernel ..."
 	wget --quiet --tries 3 --timestamping https://raw.githubusercontent.com/emmercm/rpi-kernel/master/rpi-kernel && chmod +x rpi-kernel > /dev/null
-	if [ -e "rpi-kernel" ]; then
+	if [[ -e "rpi-kernel" ]]; then
 		echo ""
 		./rpi-kernel --version ${KERNEL_BASE} modules || (
 			echo "   Build failed, consider running rpi-kernel to build the entire kernel and headers together"
